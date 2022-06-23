@@ -19,8 +19,8 @@
 ---
 apiVersion: v2
 name: airflow
-version: 1.7.0-dev
-appVersion: 2.3.2
+version: 1.6.0
+appVersion: 2.3.0
 description: The official Helm chart to deploy Apache Airflow, a platform to
   programmatically author, schedule, and monitor workflows
 home: https://airflow.apache.org/
@@ -32,10 +32,6 @@ keywords:
   - airflow
   - workflow
   - scheduler
-dependencies:
-  - name: postgresql
-    version: 10.5.3
-    condition: postgresql.enabled
 maintainers:
   - email: dev@airflow.apache.org
     name: Apache Airflow PMC
