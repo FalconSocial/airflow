@@ -37,7 +37,6 @@ from typing import (
     Dict,
     Generator,
     Iterable,
-    Iterator,
     List,
     NamedTuple,
     Optional,
@@ -139,7 +138,7 @@ if TYPE_CHECKING:
 
 
 @contextlib.contextmanager
-def set_current_context(context: Context) -> Iterator[Context]:
+def set_current_context(context: Context) -> Generator[Context, None, None]:
     """
     Sets the current execution context to the provided context object.
     This method should be called once per Task execution, before calling operator.execute.
@@ -401,6 +400,20 @@ class TaskInstanceKey(NamedTuple):
         return self
 
 
+def _executor_config_comparator(x, y):
+    """
+    The TaskInstance.executor_config attribute is a pickled object that may contain
+    kubernetes objects.  If the installed library version has changed since the
+    object was originally pickled, due to the underlying ``__eq__`` method on these
+    objects (which converts them to JSON), we may encounter attribute errors. In this
+    case we should replace the stored object.
+    """
+    try:
+        return x == y
+    except AttributeError:
+        return False
+
+
 class TaskInstance(Base, LoggingMixin):
     """
     Task instances store the state of a task instance. This table is the
@@ -443,7 +456,7 @@ class TaskInstance(Base, LoggingMixin):
     queued_dttm = Column(UtcDateTime)
     queued_by_job_id = Column(Integer)
     pid = Column(Integer)
-    executor_config = Column(PickleType(pickler=dill))
+    executor_config = Column(PickleType(pickler=dill, comparator=_executor_config_comparator))
 
     external_executor_id = Column(String(ID_LEN, **COLLATION_ARGS))
 
@@ -772,7 +785,13 @@ class TaskInstance(Base, LoggingMixin):
         """Log URL for TaskInstance"""
         iso = quote(self.execution_date.isoformat())
         base_url = conf.get('webserver', 'BASE_URL')
-        return base_url + f"/log?execution_date={iso}&task_id={self.task_id}&dag_id={self.dag_id}"
+        return (
+            f"{base_url}/log"
+            f"?execution_date={iso}"
+            f"&task_id={self.task_id}"
+            f"&dag_id={self.dag_id}"
+            f"&map_index={self.map_index}"
+        )
 
     @property
     def mark_success_url(self):
@@ -2085,7 +2104,10 @@ class TaskInstance(Base, LoggingMixin):
 
     @provide_session
     def get_rendered_template_fields(self, session: Session = NEW_SESSION) -> None:
-        """Fetch rendered template fields from DB"""
+        """
+        Update task with rendered template fields for presentation in UI.
+        If task has already run, will fetch from DB; otherwise will render.
+        """
         from airflow.models.renderedtifields import RenderedTaskInstanceFields
 
         rendered_task_instance_fields = RenderedTaskInstanceFields.get_templated_fields(self, session=session)
@@ -2094,8 +2116,15 @@ class TaskInstance(Base, LoggingMixin):
             for field_name, rendered_value in rendered_task_instance_fields.items():
                 setattr(self.task, field_name, rendered_value)
             return
+
         try:
+            # If we get here, either the task hasn't run or the RTIF record was purged.
+            from airflow.utils.log.secrets_masker import redact
+
             self.render_templates()
+            for field_name in self.task.template_fields:
+                rendered_value = getattr(self.task, field_name)
+                setattr(self.task, field_name, redact(rendered_value, field_name))
         except (TemplateAssertionError, UndefinedError) as e:
             raise AirflowException(
                 "Webserver does not have access to User-defined Macros or Filters "

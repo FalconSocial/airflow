@@ -66,6 +66,18 @@ implement it.
 Issue reporting and resolution process
 --------------------------------------
 
+An unusual element of the Apache Airflow project is that you can open a PR to
+fix an issue or make an enhancement, without needing to open an issue first.
+This is intended to make it as easy as possible to contribute to the project.
+
+If you however feel the need to open an issue (usually a bug or feature request)
+consider starting with a `GitHub Discussion <https://github.com/apache/airflow/discussions>`_ instead.
+In the vast majority of cases discussions are better than issues - you should only open
+issues if you are sure you found a bug and have a reproducible case,
+or when you want to raise a feature request that will not require a lot of discussion.
+If you have a very important topic to discuss, start a discussion on the
+`Devlist <https://lists.apache.org/list.html?dev@airflow.apache.org>`_ instead.
+
 The Apache Airflow project uses a set of labels for tracking and triaging issues, as
 well as a set of priorities and milestones to track how and when the enhancements and bug
 fixes make it into an Airflow release. This is documented as part of
@@ -203,27 +215,16 @@ also have support for popular remote development environments: GitHub Codespaces
 You can see the differences between the various environments
 `here <https://github.com/apache/airflow/blob/main/CONTRIBUTING.rst#development-environments>`__.
 
-The local env instructions can be found in full in the `LOCAL_VIRTUALENV.rst`_ file.
-
-.. _LOCAL_VIRTUALENV.rst:
-https://github.com/apache/airflow/blob/main/LOCAL_VIRTUALENV.rst
+The local env instructions can be found in full in the `LOCAL_VIRTUALENV.rst <https://github.com/apache/airflow/blob/main/LOCAL_VIRTUALENV.rst>`_ file.
 
 The Breeze Docker Compose env is to maintain a consistent and common development environment so that you
 can replicate CI failures locally and work on solving them locally rather by pushing to CI.
 
-The Breeze instructions can be found in full in the `BREEZE.rst`_ file.
-
-.. _BREEZE.rst:
-https://github.com/apache/airflow/blob/main/BREEZE.rst
+The Breeze instructions can be found in full in the `BREEZE.rst <https://github.com/apache/airflow/blob/main/BREEZE.rst>`_ file.
 
 You can configure the Docker-based Breeze development environment as follows:
 
-1. Install the latest versions of the `Docker Community Edition`_ and `Docker Compose`_ and add them to the PATH.
-
-.. _Docker Community Edition:
-https://github.com/apache/airflow/blob/main/BREEZE.rst#docker-community-edition
-
-.. _Docker Compose: https://github.com/apache/airflow/blob/main/BREEZE.rst#docker-compose
+1. Install the latest versions of the `Docker Community Edition <https://docs.docker.com/get-docker/>`_ and `Docker Compose <https://docs.docker.com/compose/install/#install-compose>`_ and add them to the PATH.
 
 2. Install `jq`_ on your machine. The exact command depends on the operating system (or Linux distribution) you use.
 
@@ -340,13 +341,11 @@ Step 4: Prepare PR
      * `doc`
      * `misc`
 
-     To add a newsfragment, simply create an rst file named ``{pr_number}.{type}.rst`` (e.g. ``1234.bugfix.rst``)
+     To add a newsfragment, create an ``rst`` file named ``{pr_number}.{type}.rst`` (e.g. ``1234.bugfix.rst``)
      and place in either `newsfragments <https://github.com/apache/airflow/blob/main/newsfragments>`__ for core newsfragments,
      or `chart/newsfragments <https://github.com/apache/airflow/blob/main/chart/newsfragments>`__ for helm chart newsfragments.
 
-     For significant newsfragments, similar to git commits, the first line is the summary and optionally a
-     body can be added with an empty line separating it.
-     For other newsfragment types, only use a single summary line.
+     In general newsfragments must be one line.  For newsfragment type ``significant``, you may include summary and body separated by a blank line, similar to ``git`` commit messages.
 
 2. Rebase your fork, squash commits, and resolve all conflicts. See `How to rebase PR <#how-to-rebase-pr>`_
    if you need help with rebasing your change. Remember to rebase often if your PR takes a lot of time to
@@ -491,10 +490,10 @@ Development Environments
 There are two environments, available on Linux and macOS, that you can use to
 develop Apache Airflow:
 
--   `Local virtualenv development environment <#local-virtualenv-development-environment>`_
+-   `Local virtualenv development environment <LOCAL_VIRTUALENV.rst>`_
     that supports running unit tests and can be used in your IDE.
 
--   `Breeze Docker-based development environment <#breeze-development-environment>`_ that provides
+-   `Breeze Docker-based development environment <BREEZE.rst>`_ that provides
     an end-to-end CI solution with all software dependencies covered.
 
 The table below summarizes differences between the environments:
@@ -552,7 +551,7 @@ Limitations:
     real unit tests. Technically, to run integration tests, you can configure
     and install the dependencies on your own, but it is usually complex.
     Instead, you are recommended to use
-    `Breeze development environment <#breeze-development-environment>`__ with all required packages
+    `Breeze development environment <BREEZE.rst>`__ with all required packages
     pre-installed.
 
 -   You need to make sure that your local environment is consistent with other
@@ -673,7 +672,7 @@ and not packaged together with the core, unless you set ``INSTALL_PROVIDERS_FROM
 variable to ``true``.
 
 In Breeze - which is a development environment, ``INSTALL_PROVIDERS_FROM_SOURCES`` variable is set to true,
-but you can add ``--install-providers-from-sources=true`` flag to Breeze to skip installing providers when
+but you can add ``--install-providers-from-sources=false`` flag to Breeze to install providers from PyPI instead of source files when
 building the images.
 
 One watch-out - providers are still always installed (or rather available) if you install airflow from
@@ -727,7 +726,7 @@ hashicorp                  google
 microsoft.azure            google,oracle,sftp
 mysql                      amazon,presto,trino,vertica
 postgres                   amazon
-presto                     google
+presto                     google,slack
 salesforce                 tableau
 sftp                       ssh
 slack                      http
@@ -1252,6 +1251,7 @@ commands:
     yarn run prod
 
     # Starts a web server that manages and updates your assets as you modify them
+    # You'll need to run the webserver in debug mode too: `airflow webserver -d`
     yarn run dev
 
 
